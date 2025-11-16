@@ -1,0 +1,43 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <!-- 왼쪽 상단 메뉴 버튼 -->
+    <ImageButton
+        android:id="@+id/btnMenu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_menu_more"
+        android:contentDescription="메뉴"
+        android:background="@null"
+        android:layout_gravity="top|start"
+        android:padding="16dp"
+        app:tint="#000000" />
+
+    <!-- 오른쪽 상단 기능 관리 버튼 -->
+    <ImageButton
+        android:id="@+id/btnManageFeatures"
+        android:src="@android:drawable/ic_menu_manage"
+        android:contentDescription="기능 관리"
+        android:background="@null"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:padding="16dp"
+        app:tint="#000000" />
+
+    <!-- 중앙 텍스트 -->
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="메인화면입니다. 오른쪽으로 슬라이드하면 다음 기능으로 이동합니다."
+        android:textSize="18sp"
+        android:textColor="#000000"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="24dp" />
+
+</FrameLayout>
