@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:330317246235:android:49871a9b0777854401edbe",
         "android_client_info": {
-          "package_name": "com.example.assistapp_sum"
+          "package_name": "com.example.assistapp"
         }
       },
       "oauth_client": [],
@@ -27,9 +27,9 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:330317246235:android:ae170f03115e355501edbe",
+        "mobilesdk_app_id": "1:330317246235:android:9507844aad89167e01edbe",
         "android_client_info": {
-          "package_name": "com.example.myapplication"
+          "package_name": "com.example.assistapp_sum"
         }
       },
       "oauth_client": [],

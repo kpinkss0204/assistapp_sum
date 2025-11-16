@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -52,6 +53,9 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.activity:activity-ktx:1.9.2")
 
+    // Google Play Services - Location (추가됨)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
     // ML Kit (손감각 훈련)
     implementation("com.google.mlkit:digital-ink-recognition:18.1.0")
     implementation("com.google.mlkit:common:18.10.0")
@@ -64,6 +68,8 @@ dependencies {
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation(libs.firebase.database)
+    implementation(libs.firebase.firestore)
 
     // CameraX
     val camerax = "1.3.4"

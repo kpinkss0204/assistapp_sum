@@ -12,8 +12,9 @@ import com.example.assistapp_sum.features.feature_manager.FeatureManagerActivity
 import com.example.assistapp_sum.features.fun1_schedulecheck.ScheduleCheckActivity
 import com.example.assistapp_sum.features.fun2_navigation.NavigationActivity
 import com.example.assistapp_sum.features.fun3_barcode.BarcodeRecognitionActivity
-import com.example.assistapp_sum.features.fun4_hand.LevelSelectActivity
+import com.example.assistapp_sum.features.fun4_hand.HandTrainingActivity
 import com.example.assistapp_sum.features.fun5_bill.BillRecognitionActivity
+import com.example.assistapp_sum.features.fun6_location.LocationSharingWithCodeActivity   // ✅ 추가
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -22,13 +23,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gestureDetector: GestureDetector
     private var currentIndex = 0
 
+    // ✅ 위치 공유 추가됨
     private val screens = listOf(
         "메인화면",
         "일정표 확인",
         "도보 네비게이션",
         "상품 인식",
         "손 감각 훈련",
-        "지폐 인식"
+        "지폐 인식",
+        "위치 공유"          // <-- 여기 추가됨
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,11 +86,23 @@ class MainActivity : AppCompatActivity() {
 
         override fun onDoubleTap(e: MotionEvent): Boolean {
             when (screens[currentIndex]) {
-                "일정표 확인" -> startActivity(Intent(this@MainActivity, ScheduleCheckActivity::class.java))
-                "도보 네비게이션" -> startActivity(Intent(this@MainActivity, NavigationActivity::class.java))
-                "상품 인식" -> startActivity(Intent(this@MainActivity, BarcodeRecognitionActivity::class.java))
-                "손 감각 훈련" -> startActivity(Intent(this@MainActivity, LevelSelectActivity::class.java))
-                "지폐 인식" -> startActivity(Intent(this@MainActivity, BillRecognitionActivity::class.java))
+                "일정표 확인" ->
+                    startActivity(Intent(this@MainActivity, ScheduleCheckActivity::class.java))
+
+                "도보 네비게이션" ->
+                    startActivity(Intent(this@MainActivity, NavigationActivity::class.java))
+
+                "상품 인식" ->
+                    startActivity(Intent(this@MainActivity, BarcodeRecognitionActivity::class.java))
+
+                "손 감각 훈련" ->
+                    startActivity(Intent(this@MainActivity, HandTrainingActivity::class.java))
+
+                "지폐 인식" ->
+                    startActivity(Intent(this@MainActivity, BillRecognitionActivity::class.java))
+
+                "위치 공유" ->
+                    startActivity(Intent(this@MainActivity, LocationSharingWithCodeActivity::class.java)) // ✅ 추가
             }
             return true
         }

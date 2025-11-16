@@ -2,12 +2,24 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.assistapp_sum">
 
-    <!-- 권한 -->
+    <!-- 기존 권한 -->
     <uses-permission android:name="android.permission.CAMERA"
         tools:ignore="PermissionImpliesUnsupportedChromeOsHardware" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!-- 위치 권한 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- 알림 권한 (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Foreground Service 권한 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
         android:name=".MyApplication"
@@ -17,6 +29,7 @@
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
 
+        <!-- 메인 액티비티 -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -36,5 +49,18 @@
         <activity android:name=".features.fun4_hand.LevelSelectActivity" />
         <activity android:name=".features.fun4_hand.HandTrainingActivity" />
         <activity android:name=".features.fun5_bill.BillRecognitionActivity" />
+
+        <!-- 🔥 새로 추가된 문제 Activity (핵심) -->
+        <activity
+            android:name=".features.fun6_location.LocationSharingWithCodeActivity"
+            android:exported="true" />
+
+        <!-- 위치 Tracking Service -->
+        <service
+            android:name=".services.LocationTrackingService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
     </application>
 </manifest>
