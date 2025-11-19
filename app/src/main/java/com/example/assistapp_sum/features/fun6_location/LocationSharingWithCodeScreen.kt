@@ -1,57 +1,58 @@
-package com.example.assistapp_sum.features.LocationSharing
+package com.example.assistapp_sum.features.fun6_location
 
-import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import com.google.firebase.database.*
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.Timestamp
-import android.content.pm.PackageManager
-import android.os.Build
-import com.google.android.gms.location.*
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.FirebaseDatabase
+import com.example.assistapp_sum.services.LocationTrackingService
+import java.security.MessageDigest
 
 @Composable
 fun LocationSharingWithCodeScreen() {
     val context = LocalContext.current
     val firestore = FirebaseFirestore.getInstance()
-    val realtimeDb = FirebaseDatabase.getInstance().reference
-    val sharedPreferences = context.getSharedPreferences("location_sharing_prefs", Context.MODE_PRIVATE)
+    val realtimeDB = FirebaseDatabase.getInstance().reference.child("shared_locations")
 
-    var generatedKey by remember { mutableStateOf(sharedPreferences.getString("generated_key", "") ?: "") }
-    var isCodeVisible by remember { mutableStateOf(false) }
-    var isBeingTracked by remember { mutableStateOf(false) }
-    var hasLocationPermission by remember { mutableStateOf(false) }
-
-    // 위치 권한 요청
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasLocationPermission = isGranted
-        if (isGranted) {
-            Toast.makeText(context, "위치 권한 허용됨", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "위치 권한 거부됨", Toast.LENGTH_SHORT).show()
-        }
+    val sharedPreferences = remember {
+        context.getSharedPreferences("location_sending_prefs", Context.MODE_PRIVATE)
     }
 
-    // 권한 체크
-    LaunchedEffect(Unit) {
-        hasLocationPermission = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
+    var generatedKey by remember {
+        mutableStateOf(sharedPreferences.getString("generated_key", "") ?: "")
+    }
+
+    // 권한 요청 상태
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.values.all { it }
+        if (!granted) {
+            Toast.makeText(context, "위치 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+        } else {
+            // 권한 허용 시 서비스 시작
+            if (generatedKey.isNotEmpty()) {
+                val initialData = mapOf(
+                    "lat" to 0.0,
+                    "lon" to 0.0,
+                    "timestamp" to System.currentTimeMillis()
+                )
+                realtimeDB.child(generatedKey!!).setValue(initialData)
+                LocationTrackingService.startService(context, generatedKey!!)
+                Toast.makeText(context, "🔔 위치 공유 서비스 시작", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // 최초 암호 생성 및 Firestore 저장
@@ -62,118 +63,76 @@ fun LocationSharingWithCodeScreen() {
             generatedKey = newKey
             sharedPreferences.edit().putString("generated_key", newKey).apply()
 
-            // Firestore 저장
-            val messageDigest = java.security.MessageDigest.getInstance("SHA-256")
-            val hashBytes = messageDigest.digest(newKey.toByteArray())
+            val hashBytes = MessageDigest.getInstance("SHA-256").digest(newKey.toByteArray())
             val docId = hashBytes.joinToString("") { "%02x".format(it) }.take(32)
-            val firestoreData = hashMapOf(
+
+            val data = hashMapOf(
                 "originalCode" to newKey,
                 "docId" to docId,
                 "createdAt" to Timestamp.now()
             )
             firestore.collection("location_keys")
                 .document(docId)
-                .set(firestoreData)
-
-            // Realtime Database 초기값 저장
-            val realtimeData = mapOf(
-                "originalCode" to newKey,
-                "lat" to null,
-                "lon" to null,
-                "timestamp" to System.currentTimeMillis()
-            )
-            realtimeDb.child("shared_locations").child(newKey).setValue(realtimeData)
+                .set(data)
         }
     }
 
-    // tracking_requests 감시 → 누군가 내 코드를 입력하면 위치 공유 시작
-    DisposableEffect(generatedKey, hasLocationPermission) {
-        if (generatedKey.isEmpty()) return@DisposableEffect onDispose {}
-
-        val trackingRef = realtimeDb.child("tracking_requests").child(generatedKey)
-        val listener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                isBeingTracked = snapshot.exists()
-                if (isBeingTracked) {
-                    Toast.makeText(context, "🔔 위치 공유 시작", Toast.LENGTH_SHORT).show()
-                    if (hasLocationPermission) {
-                        sendLocation(context, generatedKey)
-                    }
-                } else {
-                    Toast.makeText(context, "📴 위치 공유 중단", Toast.LENGTH_SHORT).show()
-                }
-            }
-            override fun onCancelled(error: DatabaseError) {}
-        }
-
-        trackingRef.addValueEventListener(listener)
-        onDispose { trackingRef.removeEventListener(listener) }
-    }
-
-    // UI
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { Text("📍 내 암호코드", style = MaterialTheme.typography.titleMedium) }
+        Text("📍 내 위치 공유", style = MaterialTheme.typography.titleMedium)
 
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("암호코드")
-                        TextButton(onClick = { isCodeVisible = !isCodeVisible }) {
-                            Text(if (isCodeVisible) "숨기기" else "보기")
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-                    Text(if (isCodeVisible) generatedKey else "••••••••••••", style = MaterialTheme.typography.headlineMedium)
-                    Spacer(Modifier.height(12.dp))
-
-                    Button(onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("암호코드", generatedKey))
-                        Toast.makeText(context, "클립보드 복사 완료", Toast.LENGTH_SHORT).show()
-                    }, modifier = Modifier.fillMaxWidth()) {
-                        Text("📋 복사")
-                    }
-                }
-            }
-        }
-
-        item {
-            Text("위치 공유 상태: ${if (isBeingTracked) "실행 중" else "중단"}")
-        }
-
-        if (!hasLocationPermission) {
-            item {
-                Button(onClick = { locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }) {
-                    Text("위치 권한 요청")
-                }
-            }
-        }
-    }
-}
-
-// GPS에서 위치 받아서 Realtime Database에 전송
-fun sendLocation(context: Context, key: String) {
-    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-    try {
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                val data = mapOf(
-                    "lat" to location.latitude,
-                    "lon" to location.longitude,
-                    "timestamp" to System.currentTimeMillis()
+        Card {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("내 고유 암호코드", style = MaterialTheme.typography.titleSmall)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    if (generatedKey.isNotEmpty()) generatedKey else "(생성 중...)",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
-                FirebaseDatabase.getInstance().reference.child("shared_locations").child(key)
-                    .updateChildren(data)
-                    .addOnSuccessListener { android.util.Log.d("LocationSharing", "위치 업데이트 성공") }
-                    .addOnFailureListener { android.util.Log.e("LocationSharing", "위치 업데이트 실패", it) }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "이 코드를 상대방에게 공유하세요",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
-    } catch (e: SecurityException) {
-        Toast.makeText(context, "위치 권한이 필요합니다", Toast.LENGTH_SHORT).show()
+
+        Button(
+            onClick = {
+                if (generatedKey.isNotEmpty()) {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("암호코드", generatedKey))
+                    Toast.makeText(context, "클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = generatedKey.isNotEmpty()
+        ) {
+            Text("📋 클립보드에 복사")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 🔹 권한 요청 버튼
+        Button(
+            onClick = {
+                val permissionsToRequest = mutableListOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    permissionsToRequest.add(android.Manifest.permission.FOREGROUND_SERVICE_LOCATION)
+                }
+                permissionLauncher.launch(permissionsToRequest.toTypedArray())
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("⚠️ 위치 권한 요청 및 서비스 시작")
+        }
     }
 }
